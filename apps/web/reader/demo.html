@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>学术阅读器 · 引用跳转与双栏还原</title>
+  <link rel="stylesheet" href="reader.css">
+</head>
+<body>
+  <div id="app"></div>
+
+  <noscript>
+    <p style="padding:24px;font:14px/1.6 system-ui">此演示需要启用 JavaScript。</p>
+  </noscript>
+
+  <!-- 经典脚本，无 ES module，因此 file:// 直接打开也能用 -->
+  <script src="demo-data.js"></script>
+  <script src="reader.js"></script>
+  <script>
+    (function () {
+      var app = document.getElementById("app");
+      var doc = window.__READER_DOC__;
+      if (!doc) {
+        app.innerHTML =
+          '<div style="max-width:640px;margin:80px auto;padding:24px;font:14px/1.7 system-ui;' +
+          'border:1px solid #e2dcd2;border-radius:10px;background:#fffdf9;color:#201e1b">' +
+          "<h1 style=\"font-size:18px;margin:0 0 10px\">缺少演示数据</h1>" +
+          "<p>先生成 <code>demo-data.js</code>（在 <code>apps/api</code> 目录）：</p>" +
+          "<pre style=\"overflow:auto;background:#f4f1ec;padding:10px;border-radius:6px\">" +
+          "python -m app.reader --demo --format js -o ../web/reader/demo-data.js</pre>" +
+          "<p>然后刷新本页。</p></div>";
+        return;
+      }
+      try {
+        var view = new Reader.ReaderView(doc, app);
+        view.mountView();
+        window.readerView = view;
+      } catch (err) {
+        console.error(err);
+        app.innerHTML =
+          '<pre style="max-width:760px;margin:40px auto;padding:16px;overflow:auto;' +
+          'border:1px solid #a8251b;border-radius:8px;color:#a8251b;font:12px/1.5 monospace">' +
+          "阅读器初始化失败：\n" + String(err && err.stack || err).replace(/[<>&]/g, function (c) {
+            return { "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c];
+          }) + "</pre>";
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Research Assistant · 科研助手工作台</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f6b5c'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='Georgia,serif' font-size='15' fill='white'%3ERA%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css?v=3">
+  <link rel="stylesheet" href="/static/research.css?v=3">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">RA</span>
+        <div>
+          <strong>Research Assistant</strong>
+          <small>科研助手工作台</small>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="主导航">
+        <button type="button" class="nav-item" data-view="library">
+          <span class="nav-icon">库</span>
+          <span>文献库</span>
+        </button>
+        <button type="button" class="nav-item" data-view="reader">
+          <span class="nav-icon">读</span>
+          <span>阅读器</span>
+        </button>
+        <button type="button" class="nav-item" data-view="graph">
+          <span class="nav-icon">图</span>
+          <span>引用图谱</span>
+        </button>
+        <button type="button" class="nav-item" data-view="recommend">
+          <span class="nav-icon">荐</span>
+          <span>推荐</span>
+        </button>
+        <button type="button" class="nav-item" data-view="writing">
+          <span class="nav-icon">写</span>
+          <span>写作助手</span>
+        </button>
+        <button type="button" class="nav-item active" data-view="translate">
+          <span class="nav-icon">译</span>
+          <span>学术翻译</span>
+        </button>
+        <button type="button" class="nav-item" data-view="general">
+          <span class="nav-icon">通</span>
+          <span>通用大模型</span>
+        </button>
+        <button type="button" class="nav-item" data-view="chat">
+          <span class="nav-icon">聊</span>
+          <span>对话 / 任务</span>
+        </button>
+        <button type="button" class="nav-item" data-view="status">
+          <span class="nav-icon">状</span>
+          <span>系统状态</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-card">
+        <span id="healthDot" class="dot checking"></span>
+        <div>
+          <strong id="healthText">检查中…</strong>
+          <small id="healthSub">/health</small>
+        </div>
+      </div>
+
+      <div class="sidebar-foot">
+        <span>本地服务</span>
+        <code>localhost:8000</code>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="viewTitle">学术翻译</h1>
+          <p id="viewSubtitle">中译英 · 英译中 · 公式与引用原样保留</p>
+        </div>
+        <div class="top-actions">
+          <span id="modelBadge" class="badge">读取配置…</span>
+          <button id="refreshBtn" type="button" class="ghost small">刷新状态</button>
+        </div>
+      </header>
+
+      <!-- ── 文献库 ─────────────────────────────────────── -->
+      <section id="view-library" class="view" aria-labelledby="viewTitle">
+        <section class="panel lib-toolbar">
+          <div class="row wrap">
+            <label class="primary file-btn">
+              上传 PDF（可多选）
+              <input id="libUpload" type="file" accept=".pdf,application/pdf" multiple>
+            </label>
+            <input id="libSearch" type="search" placeholder="按标题 / 文件名搜索" aria-label="搜索文献">
+            <label class="sr-only" for="libStatus">解析状态</label>
+            <select id="libStatus" class="ghost small select-inline">
+              <option value="">全部状态</option>
+              <option value="ready">已就绪</option>
+              <option value="parsing">解析中</option>
+              <option value="queued">排队中</option>
+              <option value="failed">失败</option>
+            </select>
+            <button id="libRefresh" type="button" class="ghost small">刷新</button>
+            <span id="libStats" class="hint"></span>
+          </div>
+          <div class="row wrap lib-download">
+            <input id="libArxiv" placeholder="arXiv ID（1706.03762v7）或论文标题" aria-label="arXiv ID 或标题">
+            <button id="libDownload" type="button" class="ghost small">下载 / 检索</button>
+            <label class="hint"><input id="libSearchOnly" type="checkbox"> 只检索不下载</label>
+          </div>
+          <div id="libUploadNotes"></div>
+        </section>
+
+        <div id="libList" class="paper-list" aria-live="polite">
+          <div class="empty"><strong>文献库为空</strong><span>上传 PDF 后自动解析：目录、图表、公式、参考文献与引用位置。</span></div>
+        </div>
+
+        <section id="libCompare" class="panel output-scroll" aria-live="polite" hidden></section>
+
+        <section class="panel qa-panel">
+          <div class="panel-head">
+            <div>
+              <h2>文献问答</h2>
+              <p>勾选文献可做多篇问答；回答只基于检索到的原文证据，并标出出处。</p>
+            </div>
+            <span id="qaSelected" class="hint">未选择文献时使用全部已就绪文献</span>
+          </div>
+          <form id="qaForm" class="composer">
+            <label class="sr-only" for="qaQuery">问题</label>
+            <textarea id="qaQuery" rows="2" maxlength="4000"
+                      placeholder="例如：这些论文分别如何降低长序列的注意力开销？"></textarea>
+            <button id="qaAsk" type="submit" class="primary">提问</button>
+          </form>
+          <div id="qaAnswer" class="qa-answer"></div>
+        </section>
+      </section>
+
+      <!-- ── 阅读器 ─────────────────────────────────────── -->
+      <section id="view-reader" class="view" aria-labelledby="viewTitle">
+        <section class="panel reader-toolbar">
+          <div class="reader-heading">
+            <strong id="readerTitle">未选择文献</strong>
+            <small id="readerMeta">在文献库点击“阅读”打开</small>
+          </div>
+          <div class="row wrap">
+            <label class="sr-only" for="readerPaper">切换文献</label>
+            <select id="readerPaper" class="ghost small select-inline"></select>
+            <label class="hint"><input id="readerBilingual" type="checkbox" checked> 双语</label>
+            <label class="hint"><input id="readerFollow" type="checkbox" checked> 跟随页码</label>
+            <button id="readerTranslate" type="button" class="ghost small">翻译本页</button>
+            <button id="readerTranslateAll" type="button" class="ghost small">翻译全文</button>
+            <label class="sr-only" for="readerLang">导出语言</label>
+            <select id="readerLang" class="ghost small select-inline">
+              <option value="bi">双语</option>
+              <option value="zh">中文</option>
+              <option value="en">原文</option>
+            </select>
+            <button id="readerExport" type="button" class="ghost small">导出 Markdown</button>
+          </div>
+        </section>
+
+        <div class="reader-grid">
+          <nav id="readerToc" class="panel reader-toc" aria-label="目录"></nav>
+          <div class="panel reader-pdf">
+            <iframe id="readerPdf" title="PDF 原文"></iframe>
+          </div>
+          <div class="panel reader-text" id="readerText">
+            <div id="readerWarn" class="warning" hidden></div>
+            <div id="readerBlocks"></div>
+            <details class="reader-refs">
+              <summary>参考文献</summary>
+              <ol id="readerRefs"></ol>
+            </details>
+          </div>
+        </div>
+        <div id="readerSelection" class="selection-pop" hidden>
+          <button id="readerSelectionBtn" type="button" class="primary small">翻译选中</button>
+        </div>
+      </section>
+
+      <!-- ── 引用图谱 ───────────────────────────────────── -->
+      <section id="view-graph" class="view" aria-labelledby="viewTitle">
+        <section class="panel graph-controls">
+          <div class="row wrap">
+            <button id="graphBuild" type="button" class="primary">建图</button>
+            <button id="graphSurvey" type="button" class="ghost small">生成综述</button>
+            <button id="graphFuture" type="button" class="ghost small">Future Work</button>
+            <span id="graphStats" class="hint">至少选中 2 篇已解析文献</span>
+          </div>
+          <div id="graphPapers" class="check-list"></div>
+        </section>
+
+        <div class="graph-grid">
+          <div class="panel graph-canvas">
+            <svg id="graphSvg" role="img" aria-label="引用图谱"></svg>
+            <div id="graphNodeInfo" class="graph-node-info"></div>
+          </div>
+          <div class="panel graph-side">
+            <h3>基石论文</h3>
+            <div id="graphKeystone"></div>
+            <h3>边缘衍生</h3>
+            <div id="graphPeripheral"></div>
+            <h3>社区</h3>
+            <div id="graphCommunities"></div>
+          </div>
+        </div>
+        <section id="graphOutput" class="panel output-scroll" hidden></section>
+      </section>
+
+      <!-- ── 推荐 ───────────────────────────────────────── -->
+      <section id="view-recommend" class="view" aria-labelledby="viewTitle">
+        <section class="panel rec-controls">
+          <div class="row wrap">
+            <label>近几天 <input id="recDays" type="number" value="14" min="1" max="90"></label>
+            <label>条数 <input id="recTop" type="number" value="5" min="1" max="20"></label>
+            <label class="hint"><input id="recSeen" type="checkbox"> 包含已推荐</label>
+            <label class="hint"><input id="recGithub" type="checkbox"> 检索 GitHub 代码</label>
+            <button id="recRefresh" type="button" class="primary">刷新推荐</button>
+          </div>
+          <p id="recMeta" class="hint">从 arXiv 拉取候选，按文献库主题、新鲜度、代码可用性与反馈打分。</p>
+        </section>
+        <div id="recList" class="paper-list"></div>
+      </section>
+
+      <!-- ── 写作助手 ───────────────────────────────────── -->
+      <section id="view-writing" class="view" aria-labelledby="viewTitle">
+        <section class="panel write-form">
+          <div class="panel-head">
+            <div>
+              <h2>从想法到论文框架</h2>
+              <p>参考文献只取文献库中的真实条目；没有可引用材料时明确留空。</p>
+            </div>
+          </div>
+          <label class="block-label">研究想法
+            <textarea id="writeIdea" rows="4" maxlength="6000"
+                      placeholder="例如：面向长文档问答的自适应证据压缩与引用一致性约束"></textarea>
+          </label>
+          <div class="row wrap">
+            <label class="hint"><input id="writeUseAll" type="checkbox" checked> 使用全部已解析文献作为参考文献池</label>
+            <button id="writeFramework" type="button" class="primary">生成框架</button>
+          </div>
+          <div id="writeOutput" class="qa-answer"></div>
+        </section>
+
+        <div class="writing-grid">
+          <section class="panel">
+            <h3>架构 / 流程图</h3>
+            <label class="block-label">结构描述（每行一个节点或 A -> B）
+              <textarea id="diagramDesc" rows="4"
+                        placeholder="Input Encoder&#10;Retriever -> Encoder&#10;Encoder -> Decoder"></textarea>
+            </label>
+            <div class="row wrap">
+              <select id="diagramFormat" class="ghost small select-inline">
+                <option value="mermaid">Mermaid</option>
+                <option value="graphviz">Graphviz</option>
+                <option value="tikz">TikZ</option>
+                <option value="matplotlib">Matplotlib</option>
+              </select>
+              <input id="diagramTitle" placeholder="图标题（可选）">
+              <button id="diagramBtn" type="button" class="ghost small">生成脚本</button>
+            </div>
+            <pre id="diagramOut" class="code-out" hidden></pre>
+            <div id="diagramIssues" class="warning" hidden></div>
+          </section>
+
+          <section class="panel">
+            <h3>数据图表</h3>
+            <label class="block-label">CSV（≤2 MB，≤5000 行）
+              <input id="chartFile" type="file" accept=".csv,text/csv">
+            </label>
+            <div class="row wrap">
+              <input id="chartTitle" placeholder="图表标题（可选）">
+              <label>图号 <input id="chartNo" type="number" value="1" min="1"></label>
+              <button id="chartBtn" type="button" class="ghost small">生成图表</button>
+            </div>
+            <div id="chartOut" class="chart-out"></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ── 学术翻译 ───────────────────────────────────── -->
+      <section id="view-translate" class="view active" aria-labelledby="viewTitle">
+        <div class="workspace">
+          <section class="panel input-panel">
+            <div class="panel-head">
+              <div>
+                <h2 id="sourceTitle">中文原文</h2>
+                <p id="sourceSub">摘要、全文或段落均可</p>
+              </div>
+              <div class="row wrap">
+                <div class="segmented" role="tablist" aria-label="翻译方向">
+                  <button type="button" class="seg active" role="tab"
+                          data-tr-mode="zh2en" aria-selected="true">中译英</button>
+                  <button type="button" class="seg" role="tab"
+                          data-tr-mode="en2zh" aria-selected="false">英译中</button>
+                </div>
+                <button id="demoBtn" type="button" class="ghost small">载入示例</button>
+                <label class="ghost small file-btn">
+                  导入 .md/.txt
+                  <input id="fileInput" type="file" accept=".txt,.md,.markdown,text/plain,text/markdown">
+                </label>
+                <button id="clearBtn" type="button" class="ghost small">清空</button>
+              </div>
+            </div>
+
+            <label class="sr-only" for="zhText">原文</label>
+            <textarea id="zhText" class="source-input" placeholder="把中文摘要或论文段落粘贴到这里……"></textarea>
+
+            <details class="options">
+              <summary>高级选项</summary>
+              <div class="option-grid">
+                <label>
+                  最大片段字符
+                  <input id="maxChars" type="number" value="3000" min="80" max="20000" step="100">
+                </label>
+                <label>
+                  术语上限
+                  <input id="maxTerms" type="number" value="30" min="0" max="100">
+                </label>
+              </div>
+              <label class="block-label">
+                自定义术语表
+                <span id="glossaryHint" class="hint">每行 <code>中文=English</code>，或直接粘贴 JSON 数组</span>
+                <textarea id="glossaryInput" rows="4" placeholder="稀疏注意力=sparse attention&#10;长文档=long document"></textarea>
+              </label>
+            </details>
+
+            <div class="panel-actions">
+              <span class="hint">公式、变量、代码、URL、引用会先被保护，译后原样还原。</span>
+              <button id="translateBtn" type="button" class="primary">翻译为学术英文</button>
+            </div>
+          </section>
+
+          <section class="panel output-panel">
+            <div class="panel-head">
+              <div>
+                <h2 id="outputTitle">英文输出</h2>
+                <p id="translateMeta">等待输入</p>
+              </div>
+              <div class="row wrap">
+                <button id="copyBtn" type="button" class="ghost small" disabled>复制</button>
+                <button id="downloadMdBtn" type="button" class="ghost small" disabled>下载 .md</button>
+                <button id="downloadJsonBtn" type="button" class="ghost small" disabled>下载 .json</button>
+              </div>
+            </div>
+
+            <div class="tabs" role="tablist" aria-label="翻译结果视图">
+              <button type="button" class="tab active" role="tab" aria-selected="true" data-tab="translation">译文</button>
+              <button type="button" class="tab" role="tab" aria-selected="false" data-tab="compare">对照</button>
+              <button type="button" class="tab" role="tab" aria-selected="false" data-tab="glossary">术语表</button>
+              <button type="button" class="tab" role="tab" aria-selected="false" data-tab="checks">校验</button>
+            </div>
+
+            <div class="tab-panels">
+              <div class="tab-panel active" data-panel="translation">
+                <div id="translationEmpty" class="empty">
+                  <strong id="translationEmptyTitle">译文会显示在这里</strong>
+                  <span id="translationEmptyHint">输入中文后点击“翻译为学术英文”。</span>
+                </div>
+                <pre id="translationOut" class="translation-output" hidden></pre>
+              </div>
+              <div class="tab-panel" data-panel="compare">
+                <div id="compareOut" class="compare">
+                  <div class="empty"><strong>暂无对照</strong><span>完成一次翻译后，这里按段落左右对照。</span></div>
+                </div>
+              </div>
+              <div class="tab-panel" data-panel="glossary">
+                <div id="glossaryOut">
+                  <div class="empty"><strong>暂无术语表</strong><span>术语会在翻译时自动抽取并统一。</span></div>
+                </div>
+              </div>
+              <div class="tab-panel" data-panel="checks">
+                <div id="issuesOut">
+                  <div class="empty"><strong>暂无校验结果</strong><span>占位符、术语冲突等问题会在这里列出。</span></div>
+                </div>
+                <div id="statsOut" class="stats"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ── 通用大模型 ───────────────────────────────────── -->
+      <section id="view-general" class="view" aria-labelledby="viewTitle">
+        <div class="chat-shell panel">
+          <div class="panel-head chat-head">
+            <div>
+              <h2>通用大模型</h2>
+              <p>模型问答 · 图片理解 · 文生图 · 语音识别与朗读</p>
+            </div>
+            <div class="row wrap">
+              <div class="segmented" role="tablist" aria-label="通用大模型功能">
+                <button type="button" class="seg active" role="tab"
+                        data-gen-mode="chat" aria-selected="true"
+                        aria-controls="generalChatPane">问答</button>
+                <button type="button" class="seg" role="tab"
+                        data-gen-mode="image" aria-selected="false"
+                        aria-controls="generalImagePane">图片生成</button>
+              </div>
+              <label class="sr-only" for="genLang">语音语言</label>
+              <select id="genLang" class="ghost small select-inline" title="语音识别 / 朗读语言">
+                <option value="zh-CN">中文</option>
+                <option value="en-US">English</option>
+              </select>
+              <button id="genNewBtn" type="button" class="ghost small">新对话</button>
+            </div>
+          </div>
+
+          <div id="generalChatPane" class="gen-pane" role="tabpanel" aria-label="问答">
+            <div id="generalLog" class="chat-log" aria-live="polite">
+              <div class="empty chat-empty">
+                <strong>通用问答模块</strong>
+                <span>直接提问；上传图片后可做图片理解或提取文字；语音可用麦克风输入、点“朗读”听回答。</span>
+              </div>
+            </div>
+
+            <div id="generalImageChip" class="attach-chip" hidden>
+              <span class="attach-tag">图片</span>
+              <span id="generalImageName" class="attach-name"></span>
+              <label class="sr-only" for="generalImageMode">图片处理方式</label>
+              <select id="generalImageMode" class="ghost small select-inline"
+                      title="图片理解：交给多模态模型回答；提取文字：OCR">
+                <option value="vision">图片理解</option>
+                <option value="ocr">提取文字</option>
+              </select>
+              <span id="generalImageMeta" class="attach-meta"></span>
+              <button id="generalImageRemove" type="button" class="attach-x"
+                      aria-label="移除图片" title="移除图片">×</button>
+            </div>
+
+            <form id="generalForm" class="composer general-composer">
+              <input id="generalImageInput" type="file" hidden
+                     accept=".png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp">
+              <button id="generalImageBtn" type="button" class="ghost attach-btn"
+                      title="上传图片：图片理解（≤10 MB）或提取文字（≤25 MB）">图片</button>
+              <button id="generalMicBtn" type="button" class="ghost attach-btn"
+                      aria-pressed="false" title="语音输入（Chrome / Edge）">语音</button>
+              <label class="sr-only" for="generalInput">输入问题</label>
+              <textarea id="generalInput" rows="2" maxlength="4000"
+                        placeholder="例如：用通俗的话解释什么是过拟合"></textarea>
+              <button id="generalSendBtn" type="submit" class="primary">发送</button>
+            </form>
+            <p class="hint composer-hint">
+              Ctrl+Enter 发送。图片理解由多模态模型直接看图回答；提取文字走 OCR。语音识别与朗读使用浏览器原生能力（Chrome / Edge）。
+            </p>
+          </div>
+
+          <div id="generalImagePane" class="gen-pane image-gen-pane"
+               role="tabpanel" aria-label="图片生成" hidden>
+            <div class="image-gen-form">
+              <label for="genPrompt">提示词</label>
+              <textarea id="genPrompt" rows="4" maxlength="2000"
+                        placeholder="例如：一只戴眼镜的橘猫坐在书桌前读论文，水彩插画风格"></textarea>
+              <div class="row wrap image-gen-opts">
+                <label>尺寸
+                  <select id="genSize" class="ghost small select-inline">
+                    <option value="1024*1024">1024×1024 正方形</option>
+                    <option value="1280*720">1280×720 横版 16:9</option>
+                    <option value="720*1280">720×1280 竖版 9:16</option>
+                    <option value="1024*768">1024×768 横版 4:3</option>
+                  </select>
+                </label>
+                <label>数量
+                  <select id="genCount" class="ghost small select-inline">
+                    <option value="1">1 张</option>
+                    <option value="2">2 张</option>
+                    <option value="3">3 张</option>
+                    <option value="4">4 张</option>
+                  </select>
+                </label>
+                <button id="genImageBtn" type="button" class="primary">生成图片</button>
+              </div>
+              <label for="genNegative">反向提示词（可选）</label>
+              <input id="genNegative" type="text" maxlength="1000"
+                     placeholder="例如：模糊、低清、多余的肢体">
+              <p class="hint">由通义万相异步生成，通常 10–30 秒；图片保存在本机 static/generated。</p>
+            </div>
+            <div id="genResult" class="image-gen-result" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 对话 / 任务 ─────────────────────────────────── -->
+      <section id="view-chat" class="view" aria-labelledby="viewTitle">
+        <div class="chat-shell panel">
+          <div class="panel-head chat-head">
+            <div>
+              <h2>对话 / 任务</h2>
+              <p>Supervisor 路由 · DAG 规划 · 工具调用 · 证据校验</p>
+            </div>
+            <div class="row wrap">
+              <code id="threadLabel" class="thread-label"></code>
+              <button id="newThreadBtn" type="button" class="ghost small">新会话</button>
+            </div>
+          </div>
+
+          <div id="chatLog" class="chat-log" aria-live="polite">
+            <div class="empty chat-empty">
+              <strong>开始一轮科研任务</strong>
+              <span>输入问题，或上传 PDF、Word、图片、文本作为附件。</span>
+            </div>
+          </div>
+
+          <div id="attachChip" class="attach-chip" hidden>
+            <span id="attachKind" class="attach-tag">附件</span>
+            <span id="attachName" class="attach-name"></span>
+            <span id="attachMeta" class="attach-meta"></span>
+            <button id="attachRemove" type="button" class="attach-x" aria-label="移除附件" title="移除附件">×</button>
+          </div>
+
+          <form id="chatForm" class="composer">
+            <input id="attachInput" type="file" hidden
+                   accept=".pdf,.docx,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,.txt,.md,.markdown">
+            <button id="attachBtn" type="button" class="ghost attach-btn"
+                    title="上传 PDF、Word、图片或文本（≤25 MB）">附件</button>
+            <label class="sr-only" for="chatInput">输入问题</label>
+            <textarea id="chatInput" rows="2" maxlength="4000" placeholder="例如：对比 Transformer 与 BERT 并生成综述"></textarea>
+            <button id="chatSendBtn" type="submit" class="primary">发送</button>
+          </form>
+          <p class="hint composer-hint">Ctrl+Enter 发送。附件解析为文本后随消息送入模型（单轮最多前 1.2 万字符）；PDF 最多 100 页。</p>
+        </div>
+      </section>
+
+      <!-- ── 系统状态 ───────────────────────────────────── -->
+      <section id="view-status" class="view" aria-labelledby="viewTitle">
+        <div class="status-grid">
+          <article class="panel status-card">
+            <span class="label">后端</span>
+            <strong id="stHealth">检查中…</strong>
+            <small id="stService">/health</small>
+          </article>
+          <article class="panel status-card">
+            <span class="label">模型</span>
+            <strong id="stModel">—</strong>
+            <small id="stProvider">—</small>
+          </article>
+          <article class="panel status-card">
+            <span class="label">OCR</span>
+            <strong id="stOcr">—</strong>
+            <small id="stTessdata">—</small>
+          </article>
+          <article class="panel status-card">
+            <span class="label">运行模式</span>
+            <strong id="stMock">—</strong>
+            <small id="stModeHint">—</small>
+          </article>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>服务信息</h2>
+              <p>前端与后端同源，无需配置 CORS</p>
+            </div>
+          </div>
+          <div class="status-list">
+            <div><span>API</span><code id="stApi">/health · /api/status · /api/translate · /api/general/chat · /chat</code></div>
+            <div><span>启动</span><code>cd apps/api &amp;&amp; python -m app.server</code></div>
+            <div><span>打开</span><code>http://localhost:8000/</code></div>
+            <div><span>文档</span><code>http://localhost:8000/docs</code></div>
+          </div>
+          <p id="statusWarning" class="warning" hidden></p>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="/static/app.js?v=3"></script>
+  <script src="/static/research.js?v=9"></script>
+</body>
+</html>

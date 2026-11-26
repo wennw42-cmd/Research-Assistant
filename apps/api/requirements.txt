@@ -1,0 +1,43 @@
+# ── 核心依赖（必装）────────────────────────────────────────
+langgraph>=0.2.0
+langchain-core>=0.3.0
+pydantic>=2.7,<3.0
+pydantic-settings>=2.3,<3.0
+openai>=1.40,<2.0
+python-dotenv>=1.0
+
+# ── M1 文档解析（真实 PDF 解析必需）──────────────────────────
+pymupdf>=1.24            # 版式块/bbox/表格线框/栅格化；离线 demo 不装也能跑（回内置语料）
+
+# ── 解析增强（可选）──────────────────────────────────────────
+# pymupdf4llm>=0.0.17      # PDF→Markdown/LLM 友好文本（表格/代码块保留较好）
+# paddleocr>=2.9           # PP-StructureV2/V3：扫描件版面分析 + 表格结构 + 公式检测
+# paddlepaddle>=2.6        # PaddleOCR 的运行底座
+pytesseract>=0.3.13      # 轻量 OCR 兜底（需系统装 tesseract 可执行文件）
+pillow>=10.0             # pytesseract 路径需要
+
+# ── M2 RAG 入库与内存监控（app/rag）───────────────────────
+pymupdf>=1.24            # 同上，流式解析复用
+psutil>=5.9              # 进程 RSS 监控（不装也能跑，只是内存报告 RSS 列为空）
+# tiktoken>=0.7           # 可选：更精确的 token 估算（不装用内置估算器）
+
+# ── M3 引用图挖掘（app/citation_graph，Louvain 需要 >=3.2）────
+networkx>=3.2
+
+# ── 学术图表（app/chart 生成 300 dpi figure.py；本体仅用标准库）──
+matplotlib>=3.5
+
+# ── HTTP 服务（python -m app.server）────────────────────────
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9   # /api/parse 文件上传
+
+# ── 测试（tests/ 三大硬性用例）──────────────────────────────
+pytest>=8
+
+# ── 生产化（可选：Redis 记忆 / PG 持久化 / 重试）─────────────
+# redis>=5.0
+# psycopg[binary]>=3.2
+# tenacity>=8.5
+
+# 已验证版本组合：langgraph 0.2.x ~ 0.3.x + langchain-core 0.3.x + pydantic 2.9
